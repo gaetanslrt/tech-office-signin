@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex">
+<title>Tech Office</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@600;700&family=JetBrains+Mono:wght@500;600&family=Source+Sans+3:wght@400;600&display=swap">
+<link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+
+<a class="lock" href="/admin" title="Staff login" aria-label="Staff login">
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+    <rect x="4.5" y="10.5" width="15" height="10" rx="2.2"/>
+    <path d="M8 10.5V7.5a4 4 0 0 1 8 0v3"/>
+  </svg>
+</a>
+
+<main class="wrap" style="padding-block:72px 48px">
+
+  <header style="margin-bottom:28px">
+    <p class="eyebrow">Student Technology</p>
+    <h1>Welcome to the&nbsp;Library Tech Office</h1>
+    <p class="sub">Are you arriving or leaving?</p>
+  </header>
+
+  <nav class="choices" aria-label="Arriving or leaving">
+    <a class="choice arrive" href="/signin">
+      <div class="icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M14 4h4a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-4"/>
+          <polyline points="9 7 14 12 9 17"/>
+          <path d="M14 12H3"/>
+        </svg>
+      </div>
+      <b>Arriving</b>
+      <span>Sign in with your name and the reason for your visit.</span>
+    </a>
+
+    <a class="choice leave" href="/signout">
+      <div class="icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M10 4H6a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h4"/>
+          <polyline points="16 7 21 12 16 17"/>
+          <path d="M21 12H10"/>
+        </svg>
+      </div>
+      <b>Leaving</b>
+      <span>Sign out with your student ID.</span>
+    </a>
+  </nav>
+
+</main>
+
+</body>
+</html>

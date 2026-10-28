@@ -1,0 +1,415 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex">
+<title>Sign-In Log</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@600;700&family=JetBrains+Mono:wght@500;600&family=Source+Sans+3:wght@400;600&display=swap">
+<link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+
+<!-- ===== login ===== -->
+<section id="loginView" class="login-screen" hidden>
+  <div class="wrap login-card">
+    <header style="margin-bottom:22px; text-align:center">
+      <div style="width:52px;height:52px;margin:0 auto 16px;display:grid;place-items:center;
+                  border-radius:14px;background:var(--green-wash);border:1px solid rgba(16,85,63,.2);color:var(--green)">
+        <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <rect x="4.5" y="10.5" width="15" height="10" rx="2.2"/>
+          <path d="M8 10.5V7.5a4 4 0 0 1 8 0v3"/>
+        </svg>
+      </div>
+      <p class="eyebrow">Technology Office</p>
+      <h1 style="font-size:28px">Staff login</h1>
+    </header>
+
+    <form id="loginForm" class="card" autocomplete="off" novalidate>
+      <div class="field">
+        <label for="password">Password</label>
+        <input type="password" id="password" autocomplete="current-password" required autofocus>
+      </div>
+      <button type="submit" class="btn-primary" id="loginBtn">Submit</button>
+      <div class="alert error" id="loginError" role="alert"></div>
+    </form>
+
+    <p class="foot"><a href="/" style="color:var(--fg-dim)">Back to the kiosk</a></p>
+  </div>
+</section>
+
+<!-- ===== the log ===== -->
+<section id="logView" hidden>
+  <div class="wrap wide" style="padding-block:40px 56px">
+
+    <div class="log-head">
+      <div>
+        <p class="eyebrow">Technology Office</p>
+        <h1>Sign-in log</h1>
+      </div>
+      <div class="log-actions">
+        <div class="menu-wrap">
+          <button type="button" class="btn-gold" id="exportBtn"
+                  aria-haspopup="true" aria-expanded="false" aria-controls="exportMenu">
+            Export CSV
+            <svg class="caret" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <polyline points="5 8 10 13 15 8"/>
+            </svg>
+          </button>
+          <div class="menu" id="exportMenu" hidden>
+            <button type="button" class="btn-primary" id="exportAllBtn">Export all</button>
+            <div class="menu-or"><span>or one student</span></div>
+            <form id="exportOneForm" class="menu-row" autocomplete="off" novalidate>
+              <label for="exportSid" style="position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)">Student ID</label>
+              <input type="text" id="exportSid" placeholder="Student ID" maxlength="60" inputmode="numeric">
+              <button type="submit" class="btn-gold" id="exportOneBtn">Export</button>
+            </form>
+            <p class="menu-error" id="exportError" role="alert"></p>
+          </div>
+        </div>
+        <button type="button" class="btn-danger" id="clearBtn">Delete all</button>
+        <button type="button" class="btn-ghost" id="logoutBtn">Log out</button>
+      </div>
+    </div>
+
+    <div class="toolbar">
+      <div class="search">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true">
+          <circle cx="10.6" cy="10.6" r="6.8"/><path d="M15.6 15.6 21 21"/>
+        </svg>
+        <label for="filter" style="position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)">Filter the log</label>
+        <input type="search" id="filter" placeholder="Filter by name, ID or reason…" autocomplete="off">
+      </div>
+      <span class="tally" id="tally"></span>
+    </div>
+
+    <div class="table-scroll">
+      <table>
+        <thead>
+          <tr>
+            <th>When</th>
+            <th>Time out</th>
+            <th>Student</th>
+            <th>Student ID</th>
+            <th>Reason</th>
+          </tr>
+        </thead>
+        <tbody id="rows">
+          <tr><td class="empty-row" colspan="5">Loading…</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <p class="foot" id="tzNote"></p>
+  </div>
+</section>
+
+<!-- ===== delete-everything confirmation ===== -->
+<dialog id="clearDialog" class="confirm">
+  <form id="clearForm" method="dialog" autocomplete="off" novalidate>
+    <h2>Delete the whole log?</h2>
+    <p>This removes <b id="clearCount">every visit</b> for good. It cannot be undone &mdash;
+       export a CSV first if you want to keep a copy.</p>
+    <div class="field">
+      <label for="clearConfirm">Type DELETE to confirm</label>
+      <input type="text" id="clearConfirm" autocapitalize="characters" spellcheck="false">
+    </div>
+    <div class="alert error" id="clearError" role="alert"></div>
+    <div class="confirm-actions">
+      <button type="button" class="btn-ghost" id="clearCancel">Cancel</button>
+      <button type="submit" class="btn-danger solid" id="clearGo" disabled>Delete everything</button>
+    </div>
+  </form>
+</dialog>
+
+<script>
+(function () {
+  var loginView  = document.getElementById('loginView');
+  var logView    = document.getElementById('logView');
+  var loginForm  = document.getElementById('loginForm');
+  var loginBtn   = document.getElementById('loginBtn');
+  var loginError = document.getElementById('loginError');
+  var password   = document.getElementById('password');
+  var rowsEl     = document.getElementById('rows');
+  var tally      = document.getElementById('tally');
+  var filter     = document.getElementById('filter');
+  var tzNote     = document.getElementById('tzNote');
+
+  var visits = [];
+
+  function escapeHtml(s) {
+    return String(s).replace(/[&<>"']/g, function (c) {
+      return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
+    });
+  }
+
+  function showLogin(message) {
+    logView.hidden = true;
+    loginView.hidden = false;
+    if (message) {
+      loginError.textContent = message;
+      loginError.classList.add('on');
+    }
+    password.value = '';
+    password.focus();
+  }
+
+  function showLog() {
+    loginView.hidden = true;
+    logView.hidden = false;
+    loadVisits();
+  }
+
+  function render() {
+    var term = filter.value.trim().toLowerCase();
+    var words = term ? term.split(/\s+/) : [];
+
+    var shown = visits.filter(function (v) {
+      if (!words.length) return true;
+      var hay = (v.first_name + ' ' + v.last_name + ' ' + v.student_id + ' ' +
+                 v.reason + ' ' + v.date).toLowerCase();
+      return words.every(function (w) { return hay.indexOf(w) !== -1; });
+    });
+
+    if (!visits.length) {
+      rowsEl.innerHTML = '<tr><td class="empty-row" colspan="5">No one has signed in yet.</td></tr>';
+    } else if (!shown.length) {
+      rowsEl.innerHTML = '<tr><td class="empty-row" colspan="5">Nothing matches that filter.</td></tr>';
+    } else {
+      rowsEl.innerHTML = shown.map(function (v) {
+        return '<tr>' +
+          '<td class="when"><b>' + escapeHtml(v.date) + '</b><span>' + escapeHtml(v.time) + '</span></td>' +
+          (v.time_out
+            ? '<td class="out">' + escapeHtml(v.time_out) + '</td>'
+            : '<td class="out pending">Still here</td>') +
+          '<td class="name">' + escapeHtml(v.last_name) + ', ' + escapeHtml(v.first_name) + '</td>' +
+          '<td class="sid">' + escapeHtml(v.student_id) + '</td>' +
+          '<td><span class="chip" data-r="' + escapeHtml(v.reason) + '">' + escapeHtml(v.reason) + '</span></td>' +
+        '</tr>';
+      }).join('');
+    }
+
+    tally.textContent = shown.length === visits.length
+      ? visits.length + (visits.length === 1 ? ' entry' : ' entries')
+      : shown.length + ' of ' + visits.length;
+  }
+
+  function loadVisits() {
+    fetch('/api/visits', { credentials: 'same-origin' })
+      .then(function (res) {
+        if (res.status === 401) { showLogin('Your session expired. Sign in again.'); return null; }
+        return res.json();
+      })
+      .then(function (body) {
+        if (!body) return;
+        visits = body.visits || [];
+        tzNote.textContent = 'Times shown in ' + (body.timezone || 'local time') + '.';
+        render();
+      })
+      .catch(function () {
+        rowsEl.innerHTML = '<tr><td class="empty-row" colspan="5">Could not load the log. Reload the page.</td></tr>';
+      });
+  }
+
+  filter.addEventListener('input', render);
+
+  loginForm.addEventListener('submit', function (e) {
+    e.preventDefault();
+    loginError.classList.remove('on');
+
+    if (!password.value) {
+      loginError.textContent = 'Enter the password.';
+      loginError.classList.add('on');
+      return;
+    }
+
+    loginBtn.disabled = true;
+    loginBtn.textContent = 'Checking…';
+
+    fetch('/api/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'same-origin',
+      body: JSON.stringify({ password: password.value })
+    })
+      .then(function (res) {
+        return res.json().then(function (body) { return { status: res.status, body: body }; });
+      })
+      .then(function (r) {
+        if (r.status === 200 && r.body.ok) {
+          password.value = '';
+          showLog();
+        } else {
+          loginError.textContent = r.body.error || 'Wrong password.';
+          loginError.classList.add('on');
+          password.select();
+        }
+      })
+      .catch(function () {
+        loginError.textContent = "Couldn't reach the server. Try again.";
+        loginError.classList.add('on');
+      })
+      .finally(function () {
+        loginBtn.disabled = false;
+        loginBtn.textContent = 'Submit';
+      });
+  });
+
+  // ----- export menu -----
+  var exportBtn     = document.getElementById('exportBtn');
+  var exportMenu    = document.getElementById('exportMenu');
+  var exportAllBtn  = document.getElementById('exportAllBtn');
+  var exportOneForm = document.getElementById('exportOneForm');
+  var exportOneBtn  = document.getElementById('exportOneBtn');
+  var exportSid     = document.getElementById('exportSid');
+  var exportError   = document.getElementById('exportError');
+
+  function setMenu(open) {
+    exportMenu.hidden = !open;
+    exportBtn.setAttribute('aria-expanded', open ? 'true' : 'false');
+    exportError.classList.remove('on');
+    if (open) exportSid.focus();
+  }
+
+  exportBtn.addEventListener('click', function () { setMenu(exportMenu.hidden); });
+  document.addEventListener('click', function (e) {
+    if (!exportMenu.hidden && !exportMenu.parentNode.contains(e.target)) setMenu(false);
+  });
+  document.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape' && !exportMenu.hidden) { setMenu(false); exportBtn.focus(); }
+  });
+
+  function showExportError(message) {
+    exportError.textContent = message;
+    exportError.classList.add('on');
+  }
+
+  // Fetch rather than navigate, so a 404 ("no visits for that ID") shows up
+  // in the menu instead of replacing the page.
+  function download(url, button) {
+    var label = button.textContent;
+    button.disabled = true;
+    button.textContent = 'Exporting…';
+    exportError.classList.remove('on');
+
+    fetch(url, { credentials: 'same-origin' })
+      .then(function (res) {
+        if (res.status === 401) { showLogin('Your session expired. Sign in again.'); return null; }
+        if (!res.ok) {
+          return res.json().then(function (body) { throw new Error(body.error || 'Export failed.'); });
+        }
+        var cd = res.headers.get('Content-Disposition') || '';
+        var m = /filename="([^"]+)"/.exec(cd);
+        return res.blob().then(function (blob) { return { blob: blob, name: m ? m[1] : 'export.csv' }; });
+      })
+      .then(function (file) {
+        if (!file) return;
+        var a = document.createElement('a');
+        a.href = URL.createObjectURL(file.blob);
+        a.download = file.name;
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        setTimeout(function () { URL.revokeObjectURL(a.href); }, 1000);
+        exportSid.value = '';
+        setMenu(false);
+      })
+      .catch(function (err) {
+        showExportError(err instanceof TypeError
+          ? "Couldn't reach the server. Try again." : err.message);
+      })
+      .finally(function () {
+        button.disabled = false;
+        button.textContent = label;
+      });
+  }
+
+  exportAllBtn.addEventListener('click', function () {
+    download('/api/visits.csv', exportAllBtn);
+  });
+
+  exportOneForm.addEventListener('submit', function (e) {
+    e.preventDefault();
+    var sid = exportSid.value.trim();
+    if (!sid) { showExportError('Enter a student ID.'); exportSid.focus(); return; }
+    download('/api/visits.csv?student_id=' + encodeURIComponent(sid), exportOneBtn);
+  });
+
+  // ----- delete everything -----
+  var clearDialog  = document.getElementById('clearDialog');
+  var clearForm    = document.getElementById('clearForm');
+  var clearConfirm = document.getElementById('clearConfirm');
+  var clearGo      = document.getElementById('clearGo');
+  var clearError   = document.getElementById('clearError');
+  var clearCount   = document.getElementById('clearCount');
+
+  document.getElementById('clearBtn').addEventListener('click', function () {
+    clearConfirm.value = '';
+    clearGo.disabled = true;
+    clearError.classList.remove('on');
+    clearCount.textContent = visits.length === 1 ? '1 visit' : 'all ' + visits.length + ' visits';
+    clearDialog.showModal();
+    clearConfirm.focus();
+  });
+
+  document.getElementById('clearCancel').addEventListener('click', function () {
+    clearDialog.close();
+  });
+
+  clearConfirm.addEventListener('input', function () {
+    clearGo.disabled = clearConfirm.value.trim() !== 'DELETE';
+  });
+
+  clearForm.addEventListener('submit', function (e) {
+    e.preventDefault();
+    if (clearConfirm.value.trim() !== 'DELETE') return;
+
+    clearGo.disabled = true;
+    clearGo.textContent = 'Deleting…';
+
+    fetch('/api/visits', {
+      method: 'DELETE',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'same-origin',
+      body: JSON.stringify({ confirm: clearConfirm.value.trim() })
+    })
+      .then(function (res) {
+        if (res.status === 401) { clearDialog.close(); showLogin('Your session expired. Sign in again.'); return null; }
+        return res.json().then(function (body) {
+          if (!res.ok || !body.ok) throw new Error(body.error || 'Delete failed.');
+          return body;
+        });
+      })
+      .then(function (body) {
+        if (!body) return;
+        clearDialog.close();
+        loadVisits();
+      })
+      .catch(function (err) {
+        clearError.textContent = err instanceof TypeError
+          ? "Couldn't reach the server. Nothing was deleted." : err.message;
+        clearError.classList.add('on');
+        clearGo.disabled = false;
+      })
+      .finally(function () {
+        clearGo.textContent = 'Delete everything';
+      });
+  });
+
+  document.getElementById('logoutBtn').addEventListener('click', function () {
+    fetch('/api/logout', { method: 'POST', credentials: 'same-origin' })
+      .finally(function () { window.location.href = '/'; });
+  });
+
+  // Already signed in? Go straight to the log.
+  fetch('/api/session', { credentials: 'same-origin' })
+    .then(function (r) { return r.json(); })
+    .then(function (s) { s.authenticated ? showLog() : showLogin(); })
+    .catch(function () { showLogin(); });
+})();
+</script>
+
+</body>
+</html>

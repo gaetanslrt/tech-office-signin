@@ -1,0 +1,24 @@
+# Render Blueprint. In Render: New > Blueprint, point it at this repo.
+services:
+  - type: web
+    name: tech-office-signin
+    runtime: python
+    plan: free
+    buildCommand: pip install -r requirements.txt
+    startCommand: gunicorn app:app --bind 0.0.0.0:$PORT --workers 2 --timeout 30
+    healthCheckPath: /healthz
+    envVars:
+      # Set this yourself in the Render dashboard (Environment tab).
+      - key: ADMIN_PASSWORD
+        sync: false
+      # Paste your Neon / Supabase / Render Postgres connection string here.
+      # Leave it unset ONLY if the host gives you a real persistent disk.
+      - key: DATABASE_URL
+        sync: false
+      # Render generates this once and keeps it across deploys.
+      - key: SECRET_KEY
+        generateValue: true
+      - key: TZ_NAME
+        value: America/New_York
+      - key: SESSION_HOURS
+        value: "8"

@@ -1,0 +1,184 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex">
+<title>Tech Office Sign-Out</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@600;700&family=JetBrains+Mono:wght@500;600&family=Source+Sans+3:wght@400;600&display=swap">
+<link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+
+<a class="lock" href="/admin" title="Staff login" aria-label="Staff login">
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+    <rect x="4.5" y="10.5" width="15" height="10" rx="2.2"/>
+    <path d="M8 10.5V7.5a4 4 0 0 1 8 0v3"/>
+  </svg>
+</a>
+
+<a class="back" href="/" title="Back" aria-label="Back to start">
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+    <path d="M19 12H5"/><polyline points="11 6 5 12 11 18"/>
+  </svg>
+  Back
+</a>
+
+<main class="wrap" style="padding-block:72px 48px">
+
+  <!-- ===== the form ===== -->
+  <section id="formView">
+    <header style="margin-bottom:24px">
+      <p class="eyebrow">Student Technology</p>
+      <h1>Leaving? Sign out</h1>
+      <p class="sub">Enter your student ID. Your time out is saved the moment you press Sign out.</p>
+    </header>
+
+    <form id="signout" class="card" autocomplete="off" novalidate>
+
+      <div class="field" id="f-sid">
+        <label for="student_id">Student ID <span class="req">*</span></label>
+        <input type="text" id="student_id" name="student_id" maxlength="60"
+               autocomplete="off" inputmode="numeric" required>
+        <p class="field-error">Enter your student ID.</p>
+      </div>
+
+      <button type="submit" class="btn-primary" id="submitBtn">Sign out</button>
+
+      <div class="alert error" id="formError" role="alert"></div>
+    </form>
+
+  </section>
+
+  <!-- ===== the confirmation ===== -->
+  <section id="doneView" hidden>
+    <div class="card done">
+      <div class="tick">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <polyline points="4 12.5 9.5 18 20 6.5"/>
+        </svg>
+      </div>
+      <h2 id="doneName">You're signed out.</h2>
+      <p>Have a good day.</p>
+      <p class="meta" id="doneMeta"></p>
+      <button type="button" class="btn-primary" id="againBtn">Next student</button>
+    </div>
+    <p class="foot">This screen clears on its own in <span id="countdown">8</span>s.</p>
+  </section>
+
+</main>
+
+<script>
+(function () {
+  var form      = document.getElementById('signout');
+  var formView  = document.getElementById('formView');
+  var doneView  = document.getElementById('doneView');
+  var submitBtn = document.getElementById('submitBtn');
+  var formError = document.getElementById('formError');
+  var doneName  = document.getElementById('doneName');
+  var doneMeta  = document.getElementById('doneMeta');
+  var againBtn  = document.getElementById('againBtn');
+  var countdown = document.getElementById('countdown');
+  var sidInput  = document.getElementById('student_id');
+  var sidField  = document.getElementById('f-sid');
+
+  var RESET_SECONDS = 8;
+  var resetTimer = null, tickTimer = null;
+
+  function clearErrors() {
+    sidField.classList.remove('invalid');
+    formError.classList.remove('on');
+    formError.textContent = '';
+  }
+
+  function showError(message) {
+    formError.textContent = message;
+    formError.classList.add('on');
+    sidInput.select();
+  }
+
+  sidInput.addEventListener('input', function () { sidField.classList.remove('invalid'); });
+
+  function showDone(payload) {
+    doneName.textContent = payload.first_name
+      ? 'Bye, ' + payload.first_name + '.'
+      : "You're signed out.";
+    doneMeta.textContent = payload.left_at
+      ? 'In at ' + payload.arrived_at + '  ·  Out at ' + payload.left_at
+      : '';
+    formView.hidden = true;
+    doneView.hidden = false;
+
+    var left = RESET_SECONDS;
+    countdown.textContent = left;
+    clearInterval(tickTimer);
+    tickTimer = setInterval(function () {
+      left -= 1;
+      countdown.textContent = left > 0 ? left : 0;
+      if (left <= 0) clearInterval(tickTimer);
+    }, 1000);
+
+    clearTimeout(resetTimer);
+    resetTimer = setTimeout(resetKiosk, RESET_SECONDS * 1000);
+  }
+
+  // Back to the arriving / leaving choice for the next student.
+  function resetKiosk() {
+    clearTimeout(resetTimer);
+    clearInterval(tickTimer);
+    window.location.href = '/';
+  }
+
+  againBtn.addEventListener('click', resetKiosk);
+
+  form.addEventListener('submit', function (e) {
+    e.preventDefault();
+    clearErrors();
+
+    var studentId = sidInput.value.trim();
+    if (!studentId) {
+      sidField.classList.add('invalid');
+      sidInput.focus();
+      return;
+    }
+
+    submitBtn.disabled = true;
+    submitBtn.textContent = 'Saving…';
+
+    fetch('/api/signout', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ student_id: studentId })
+    })
+      .then(function (res) {
+        return res.json().then(function (body) { return { status: res.status, body: body }; });
+      })
+      .then(function (r) {
+        if (r.status === 200 && r.body.ok) {
+          showDone(r.body);
+        } else if (r.status === 404) {
+          showError(r.body.error);
+        } else if (r.status === 422) {
+          sidField.classList.add('invalid');
+          sidInput.focus();
+        } else {
+          throw new Error('server');
+        }
+      })
+      .catch(function () {
+        showError("Couldn't reach the server. Press Sign out again, or tell Mr. Jeter.");
+      })
+      .finally(function () {
+        submitBtn.disabled = false;
+        submitBtn.textContent = 'Sign out';
+      });
+  });
+
+  sidInput.focus();
+})();
+</script>
+
+</body>
+</html>
