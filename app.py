@@ -4,7 +4,7 @@ Tech office sign-in — Flask backend.
 Students pick Arriving or Leaving at /        (no password)
 Students fill in the sign-in form at /signin  (no password)
 Students sign out when leaving at    /signout (student ID only)
-Mr. Jeter reads the log at          /admin    (password from the environment)
+Your tech reads the log at          /admin    (password from the environment)
 
 Environment variables
 ---------------------
@@ -233,7 +233,7 @@ def sign_out():
         return jsonify(
             ok=False,
             error="We couldn't find a sign-in for that ID today. Check the number, "
-                  "or tell Mr. Jeter.",
+                  "or tell your tech.",
         ), 404
 
     arrived = datetime.fromisoformat(row["created_at"]).astimezone(DISPLAY_TZ)

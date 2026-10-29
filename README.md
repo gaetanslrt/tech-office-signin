@@ -1,6 +1,6 @@
 # Tech Office Sign-In
 
-A sign-in kiosk that replaces the paper form outside Mr. Jeter's office.
+A sign-in kiosk that replaces the paper form outside your tech's office.
 
 - **`/`** — the start screen: two big buttons, **Arriving** and **Leaving**.
   Both forms come back here once the confirmation screen clears.
@@ -87,7 +87,7 @@ Open the service's **Environment** tab and add:
 
 | Key | Value |
 |---|---|
-| `ADMIN_PASSWORD` | the password Mr. Jeter will type. Make it long. |
+| `ADMIN_PASSWORD` | the password your tech will type. Make it long. |
 | `SECRET_KEY` | run `python -c "import secrets; print(secrets.token_urlsafe(32))"` and paste the result |
 | `DATABASE_URL` | the Neon connection string from step 1 |
 | `TZ_NAME` | `America/New_York` |
